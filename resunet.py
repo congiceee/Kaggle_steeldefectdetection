@@ -14,6 +14,14 @@ from tensorflow.keras.layers import Input, Conv2D, MaxPool2D, UpSampling2D, Conc
 from tensorflow.keras.losses import binary_crossentropy
 from sklearn.model_selection import train_test_split
 
+
+from keras.callbacks import TensorBoard
+import time
+
+
+name = 'SDD_resUNet_{}'.format(int(time.time()))
+tensorboard = TensorBoard(log_dir='logs/{}'.format(name))
+
 # Kernel Configurations
 make_submission = False # used to turn off lengthy model analysis so a submission version doesn't run into memory error
 load_pretrained_model = True # load a pre-trained model
@@ -28,7 +36,7 @@ train_image_dir = os.path.join(train_dir, 'train_images') #
 img_w = 1600 # resized weidth
 img_h = 256 # resized height
 
-batch_size = 2
+batch_size = 4
 epochs = 25
 # batch size for training unet
 k_size = 3 # kernel size 3x3
@@ -49,7 +57,6 @@ train_df['ClassId'] = train_df['ImageId_ClassId'].apply(lambda x: x.split('_')[1
 # lets create a dict with class id and encoded pixels and group all the defaults per image
 train_df['ClassId_EncodedPixels'] = train_df.apply(lambda row: (row['ClassId'], row['EncodedPixels']), axis = 1)
 grouped_EncodedPixels = train_df.groupby('ImageId')['ClassId_EncodedPixels'].apply(list)
-
 
 
 # from https://www.kaggle.com/robertkag/rle-to-mask-converter
@@ -253,8 +260,8 @@ else:
 
 
 X_train, X_val = train_test_split(train_image_ids, test_size=val_size, random_state=42)
-print(train_image_ids)
-print(X_train)
+# print(train_image_ids)
+# print(X_train)
 
 
 params = {'image_dir': train_image_dir,
@@ -274,22 +281,22 @@ print(x.shape, y.shape)
 
 
 # visualize steel image with four classes of faults in seperate columns
-def viz_steel_img_mask(img, masks):
-    img = cv2.cvtColor(img.astype('float32'), cv2.COLOR_BGR2RGB)
-    fig, ax = plt.subplots(nrows=1, ncols=4, sharey=True, figsize=(20,10))
-    cmaps = ["Reds", "Blues", "Greens", "Purples"]
-    for idx, mask in enumerate(masks):
-        ax[idx].imshow(img)
-        ax[idx].imshow(mask, alpha=0.3, cmap=cmaps[idx])
+# def viz_steel_img_mask(img, masks):
+#     img = cv2.cvtColor(img.astype('float32'), cv2.COLOR_BGR2RGB)
+#     fig, ax = plt.subplots(nrows=1, ncols=4, sharey=True, figsize=(20,10))
+#     cmaps = ["Reds", "Blues", "Greens", "Purples"]
+#     for idx, mask in enumerate(masks):
+#         ax[idx].imshow(img)
+#         ax[idx].imshow(mask, alpha=0.3, cmap=cmaps[idx])
 
 
 
 # lets visualize some images with their faults to make sure our data generator is working like it should
-for ix in range(0,batch_size):
-    if y[ix].sum() > 0:
-        img = x[ix]
-        masks_temp = [y[ix][...,i] for i in range(0,4)]
-        viz_steel_img_mask(img, masks_temp)
+# for ix in range(0,batch_size):
+#     if y[ix].sum() > 0:
+#         img = x[ix]
+#         masks_temp = [y[ix][...,i] for i in range(0,4)]
+#         viz_steel_img_mask(img, masks_temp)
 
 def bn_act(x, act=True):
     'batch normalization layer with an optinal activation layer'
@@ -406,7 +413,8 @@ model = ResUNet(img_h=img_h, img_w=img_w)
 adam = tf.keras.optimizers.Adam(lr = 0.05, epsilon = 0.1)
 model.compile(optimizer=adam, loss=focal_tversky_loss, metrics=[tversky])
 
-history = model.fit_generator(training_generator, epochs=epochs, verbose=1)
+history = model.fit_generator(generator=training_generator,
+                              epochs=10, verbose=1, callbacks=[tensorboard])
 
 model.save('data/model_1.h5')
 

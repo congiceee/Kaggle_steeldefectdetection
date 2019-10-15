@@ -20,7 +20,7 @@ from keras.callbacks import TensorBoard
 import time
 
 
-name = 'SDD_{}'.format(int(time.time()))
+name = 'UNET_{}'.format(int(time.time()))
 tensorboard = TensorBoard(log_dir='logs/{}'.format(name))
 
 train_df = pd.read_csv('data/train.csv')
