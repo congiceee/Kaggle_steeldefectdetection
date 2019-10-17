@@ -416,7 +416,7 @@ model.compile(optimizer=adam, loss=focal_tversky_loss, metrics=[tversky])
 history = model.fit_generator(generator=training_generator,
                               epochs=10, verbose=1, callbacks=[tensorboard])
 
-model.save('data/model_1.h5')
+model.save('data/model_resUnet_.h5')
 
 
 # list all data in history
